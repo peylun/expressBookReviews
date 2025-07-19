@@ -4,6 +4,35 @@ let isValid = require("./auth_users.js").isValid;
 let users = require("./auth_users.js").users;
 const public_users = express.Router();
 
+const fetchBooks = async () => {
+    return Promise.resolve(books);
+};
+
+const fetchBookByIsbn = async (isbn) => {
+    return Promise.resolve(books[isbn]);
+};
+
+const fetchBooksByAuthor = async (author) => {
+    return new Promise((resolve) => {
+        // Searching with insensitive casing using includes as it seems more logical for a search
+        // Task has not been explicit on this
+        const authorLowerCase = author.toLowerCase();
+        const foundBooks = Object.values(books).filter(({author}) => author.toLowerCase().includes(authorLowerCase))
+
+        resolve(foundBooks);
+    });
+};
+
+const fetchBooksByTitle = async (title) => {
+    return new Promise((resolve) => {
+        // Searching with insensitive casing using includes as it seems more logical for a search
+        // Task has not been explicit on this
+        const titleLowerCase = title.toLowerCase();
+        const foundBooks = Object.values(books).filter(({title}) => title.toLowerCase().includes(titleLowerCase))
+
+        resolve(foundBooks);
+    });
+};
 
 public_users.post("/register", (req,res) => {
     const username = req.body.username;
@@ -26,14 +55,15 @@ public_users.post("/register", (req,res) => {
 });
 
 // Get the book list available in the shop
-public_users.get('/',function (req, res) {
-    const bookList = Object.values(books);
+public_users.get('/', async function (req, res) {
+    const fetchedBooks = await fetchBooks();
+    const bookList = Object.values(fetchedBooks);
     return res.send(JSON.stringify(bookList, null, 4));
 });
 
 // Get book details based on ISBN
-public_users.get('/isbn/:isbn',function (req, res) {
-    const foundBook = books[req.params.isbn];
+public_users.get('/isbn/:isbn', async function (req, res) {
+    const foundBook = await fetchBookByIsbn(req.params.isbn);
     if (foundBook) {
         return res.send(JSON.stringify(foundBook, null, 4))
     } else {
@@ -42,11 +72,8 @@ public_users.get('/isbn/:isbn',function (req, res) {
 });
   
 // Get book details based on author
-public_users.get('/author/:author',function (req, res) {
-    // Searching with insensitive casing using includes as it seems more logical for a search
-    // Task has not been explicit on this
-    const authorLowerCase = req.params.author.toLowerCase();
-    const foundBooks = Object.values(books).filter(({author}) => author.toLowerCase().includes(authorLowerCase));
+public_users.get('/author/:author', async function (req, res) {
+    const foundBooks = await fetchBooksByAuthor(req.params.author);
     if (foundBooks) {
         return res.send(JSON.stringify(foundBooks, null, 4))
     } else {
@@ -55,11 +82,8 @@ public_users.get('/author/:author',function (req, res) {
 });
 
 // Get all books based on title
-public_users.get('/title/:title',function (req, res) {
-    // Searching with insensitive casing using includes as it seems more logical for a search
-    // Task has not been explicit on this
-    const titleLowerCase = req.params.title.toLowerCase();
-    const foundBooks = Object.values(books).filter(({title}) => title.toLowerCase().includes(titleLowerCase));
+public_users.get('/title/:title', async function (req, res) {
+    const foundBooks = await fetchBooksByTitle(req.params.title);
     if (foundBooks) {
         return res.send(JSON.stringify(foundBooks, null, 4))
     } else {
